@@ -14,7 +14,7 @@ import (
 )
 
 // 文件夹，有need change it
-var configFile = flag.String("f", "/data/conf/conf.yaml", "the config file")
+var configFile = flag.String("f", "./etc/conf.yaml", "the config file")
 
 func main() {
 	flag.Parse()
