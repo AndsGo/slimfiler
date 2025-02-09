@@ -15,9 +15,9 @@ import (
 
 func ProxyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 只支持post
+		// 只支持get
 		if r.Method != http.MethodGet {
-			http.Error(w, "only support post", http.StatusBadRequest)
+			http.Error(w, "only support get", http.StatusBadRequest)
 			return
 		}
 		logx := svcCtx.Logger

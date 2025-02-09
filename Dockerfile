@@ -18,7 +18,7 @@ COPY --from=builder /src/bin /app
 WORKDIR /app
 
 EXPOSE 8000
-VOLUME /data/conf
+VOLUME /data
 
 ENV TZ=Asia/Shanghai
 
