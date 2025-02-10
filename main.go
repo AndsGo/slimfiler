@@ -1,20 +1,20 @@
 package main
 
 import (
-	"fileserver/internal/config"
-	"fileserver/internal/handler"
-	"fileserver/internal/svc"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"slimfiler/internal/config"
+	"slimfiler/internal/handler"
+	"slimfiler/internal/svc"
 
 	"gopkg.in/yaml.v3"
 )
 
 // 文件夹，有need change it
-var configFile = flag.String("f", "./etc/conf.yaml", "the config file")
+var configFile = flag.String("f", "./conf/conf.yaml", "the config file")
 
 func main() {
 	flag.Parse()

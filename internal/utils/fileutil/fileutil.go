@@ -34,9 +34,14 @@ func CreateFile(path string) bool {
 
 // CreateDir create directory in absolute path. param `absPath` like /a/, /a/b/.
 // Play: https://go.dev/play/p/qUuCe1OGQnM
-func CreateDir(absPath string) error {
-	// return os.MkdirAll(path.Dir(absPath), os.ModePerm)
-	return os.MkdirAll(absPath, os.ModePerm)
+func CreateDir(dir string) error {
+	// 判断目录是否存在
+	if !IsExist(dir) {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // 判断url上是否有download参数

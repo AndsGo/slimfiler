@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"fileserver/internal/svc"
-	"fileserver/internal/utils/fileutil"
 	"fmt"
 	"image/gif"
 	"io"
 	"net/http"
-	"os"
+	"slimfiler/internal/svc"
+	"slimfiler/internal/utils/fileutil"
 	"strings"
 
 	"github.com/AndsGo/imageprocess"
@@ -25,7 +24,8 @@ func ViewHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// 获取文件名称
 		fileName := r.URL.Path
 		// 打开文件
-		file, err := os.Open(fmt.Sprintf("%s%s", svcCtx.Config.UploadConf.PublicStorePath, fileName))
+		file, _, err := svcCtx.Storage.GetStream(fileName)
+		// file, err := os.Open(fmt.Sprintf("%s%s", svcCtx.Config.UploadConf.PublicStorePath, fileName))
 		if err != nil {
 			logx.Errorf("Open file error: %s", err.Error())
 			http.Error(w, "File not found", http.StatusNotFound)

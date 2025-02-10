@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"fileserver/internal/svc"
-	"fileserver/internal/utils/fileutil"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"slimfiler/internal/svc"
+	"slimfiler/internal/utils/fileutil"
 	"strings"
 
 	"github.com/AndsGo/imageprocess"
