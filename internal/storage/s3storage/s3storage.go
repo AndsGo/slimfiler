@@ -3,12 +3,16 @@ package s3storage
 import (
 	"bytes"
 	"io"
-	"time"
+	"net/http"
+	"slimfiler/internal/utils/fileutil"
+	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 // Options aws s3服务应用层客户端
@@ -24,8 +28,9 @@ type Options struct {
 }
 
 type awsS3 struct {
-	Client *s3.S3
-	Bucket string
+	Client   *s3.S3
+	Uploader *s3manager.Uploader
+	Bucket   string
 }
 
 // NewAwsS3 创建aws s3实例
@@ -41,24 +46,20 @@ func NewAwsS3(options Options) *awsS3 {
 	if options.S3ForcePathStyle {
 		config.WithS3ForcePathStyle(true)
 	}
-	// config := &aws.Config{
-	// 	Credentials:      credentials.NewStaticCredentials(options.SecretId, options.SecretKey, options.Token),
-	// 	Region:           aws.String(options.Region),
-	// 	Endpoint:         aws.String(options.Endpoint),
-	// 	DisableSSL:       aws.Bool(options.DisableSSL),
-	// 	S3ForcePathStyle: aws.Bool(options.S3ForcePathStyle),
-	// }
 	sess := session.Must(session.NewSession(config))
 	awsS3Instance.Client = s3.New(sess)
+	awsS3Instance.Uploader = s3manager.NewUploader(sess)
 	return &awsS3Instance
 }
 
 // PutObject 根据内容上传文件对象
 func (a *awsS3) Put(awsPath string, content []byte) (string, error) {
+	contentType := fileutil.GetFileType(strings.ToLower(awsPath))
 	putObjectInput := &s3.PutObjectInput{
-		Bucket: aws.String(a.Bucket),
-		Key:    aws.String(awsPath),
-		Body:   aws.ReadSeekCloser(bytes.NewReader(content)),
+		Bucket:      aws.String(a.Bucket),
+		Key:         aws.String(awsPath),
+		Body:        aws.ReadSeekCloser(bytes.NewReader(content)),
+		ContentType: aws.String(contentType),
 	}
 	resp, err := a.Client.PutObject(putObjectInput)
 	if err != nil {
@@ -67,12 +68,14 @@ func (a *awsS3) Put(awsPath string, content []byte) (string, error) {
 	return *(resp.ETag), nil
 }
 func (a *awsS3) PutStream(awsPath string, r io.ReadCloser) (ETag string, err error) {
-	putObjectInput := &s3.PutObjectInput{
-		Bucket: aws.String(a.Bucket),
-		Key:    aws.String(awsPath),
-		Body:   aws.ReadSeekCloser(r),
+	contentType := fileutil.GetFileType(strings.ToLower(awsPath))
+	putObjectInput := &s3manager.UploadInput{
+		Bucket:      aws.String(a.Bucket),
+		Key:         aws.String(awsPath),
+		Body:        r,
+		ContentType: aws.String(contentType),
 	}
-	resp, err := a.Client.PutObject(putObjectInput)
+	resp, err := a.Uploader.Upload(putObjectInput)
 	if err != nil {
 		return "", err
 	}
@@ -122,14 +125,19 @@ func (a *awsS3) Delete(awsPath string) error {
 }
 
 // HeadObject 获取对象元数据信息，包括md5和上次修改时间
-func (a *awsS3) HeadObject(awsPath string) (string, *time.Time, error) {
+func (a *awsS3) HeadObject(awsPath string) (http.Header, error) {
 	headObject := &s3.HeadObjectInput{
 		Bucket: aws.String(a.Bucket),
 		Key:    aws.String(awsPath),
 	}
 	resp, err := a.Client.HeadObject(headObject)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	return *(resp.ETag), resp.LastModified, nil
+	// resp to http.Header
+	headers := http.Header{}
+	headers["Content-Type"] = []string{*resp.ContentType}
+	headers["Content-Length"] = []string{strconv.FormatInt(*resp.ContentLength, 10)}
+	headers["ETag"] = []string{*resp.ETag}
+	return headers, nil
 }

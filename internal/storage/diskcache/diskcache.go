@@ -5,10 +5,10 @@ package diskcache
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"path/filepath"
 	"slimfiler/internal/utils/fileutil"
 	"slimfiler/internal/utils/md5"
-	"time"
 
 	"github.com/peterbourgon/diskv"
 )
@@ -62,8 +62,8 @@ func (c *Cache) Delete(key string) error {
 	return c.d.Erase(key)
 }
 
-func (c *Cache) HeadObject(key string) (string, *time.Time, error) {
-	return "", nil, nil
+func (c *Cache) HeadObject(key string) (http.Header, error) {
+	return nil, nil
 }
 
 func keyToFilename(key string) string {
@@ -78,6 +78,8 @@ func New(basePath string) *Cache {
 		d: diskv.New(diskv.Options{
 			BasePath:     basePath,
 			CacheSizeMax: 100 * 1024 * 1024, // 100MB
+			// For file "c0ffee", store file as "c0/ff/c0ffee"
+			Transform: func(s string) []string { return []string{s[0:2], s[2:4]} },
 		}),
 	}
 }

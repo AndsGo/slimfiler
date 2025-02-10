@@ -43,7 +43,7 @@ func UploadHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// 拒绝无后缀文件
 		if dotIndex == -1 {
 			logx.Error("reject the file which does not have suffix")
-			http.Error(w, "the value of file cannot be found", http.StatusBadRequest)
+			http.Error(w, "reject the file which does not have suffix", http.StatusBadRequest)
 			return
 		}
 
@@ -70,39 +70,14 @@ func UploadHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if directory == "" {
 			directory = path.Join(svcCtx.Config.Name, fileType, timeString)
 		}
-		// generate path
-		// 生成路径
-		// fullPath := path.Join(svcCtx.Config.UploadConf.PublicStorePath, directory)
-		// if !fileutil.IsExist(fullPath) {
-		// 	err = fileutil.CreateDir(fullPath + "/")
-		// 	if err != nil {
-		// 		logx.Error("failed to create directory for storing public files")
-		// 		http.Error(w, "failed to create directory for storing public files", http.StatusInternalServerError)
-		// 		return
-		// 	}
-		// }
-		// // default is public
-		// // 默认是公开的
-		// targetFile, err := os.Create(path.Join(fullPath, storeFileName))
-		// if err != nil {
-		// 	logx.Errorf("fail to create file,%v", err)
-		// 	http.Error(w, "fail to create file", http.StatusInternalServerError)
-		// 	return
-		// }
-		// defer targetFile.Close()
-		// _, err = io.Copy(targetFile, file)
-		// if err != nil {
-		// 	logx.Errorf("fail to copy file content: %v", err)
-		// 	http.Error(w, "fail to copy file content", http.StatusInternalServerError)
-		// 	return
-		// }
+		directory = path.Join("/", directory)
 
 		var md5 string = ""
 		if r.MultipartForm.Value["md5"] != nil {
 			md5 = r.MultipartForm.Value["md5"][0]
 		}
 		// 判断是否已经上传过
-		shouldReturn := returnFormMd5(md5, svcCtx, w)
+		shouldReturn := returnFormMd5(md5, handler.Filename, svcCtx, w)
 		if shouldReturn {
 			return
 		}
@@ -116,7 +91,7 @@ func UploadHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			md5 = md5util.GetMD5(context)
 		}
 		// 判断是否已经上传过
-		shouldReturn = returnFormMd5(md5, svcCtx, w)
+		shouldReturn = returnFormMd5(md5, handler.Filename, svcCtx, w)
 		if shouldReturn {
 			return
 		}
@@ -147,15 +122,15 @@ func UploadHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 // 返回值:
 //
 //	成功找到并处理文件名时返回true，否则返回false。
-func returnFormMd5(md5 string, svcCtx *svc.ServiceContext, w http.ResponseWriter) bool {
+func returnFormMd5(md5 string, fileName string, svcCtx *svc.ServiceContext, w http.ResponseWriter) bool {
 	// 检查MD5值是否为空，如果为空则尝试从数据库中获取文件名。
-	if md5 == "" {
-		fileName := ""
+	if md5 != "" {
+		fullfileName := ""
 		// 从数据库中获取与MD5值关联的文件名。
-		svcCtx.Db.Get(md5, &fileName)
+		svcCtx.Db.Get(md5, &fullfileName)
 		// 如果找到了文件名，则调用returnJson函数返回相关信息，并返回true。
-		if fileName != "" {
-			returnJson(w, md5, fileName, svcCtx, fileName)
+		if fullfileName != "" {
+			returnJson(w, md5, fileName, svcCtx, fullfileName)
 			return true
 		}
 	}
@@ -182,7 +157,7 @@ func returnJson(w http.ResponseWriter, etag string, filename string, svcCtx *svc
 	// 发送HTTP状态码200，表示请求成功。
 	w.WriteHeader(http.StatusOK)
 	// 构造JSON响应体，包含文件名和文件URL，并写入响应中。
-	w.Write([]byte(fmt.Sprintf(`{"code":10000,"data":{"name":"%s","url":"%s"},"msg":""}`, filename, svcCtx.Config.UploadConf.ServerURL+"/"+storeFileName)))
+	w.Write([]byte(fmt.Sprintf(`{"code":10000,"data":{"name":"%s","url":"%s"},"msg":""}`, filename, svcCtx.Config.UploadConf.ServerURL+storeFileName)))
 }
 
 func CheckOverSize(svCtx *svc.ServiceContext, fileType string, size int64) error {

@@ -3,22 +3,22 @@ package diskstorage
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"slimfiler/internal/utils/fileutil"
 	"slimfiler/internal/utils/md5"
-	"time"
 )
 
-// Cache is an implementation of httpcache.Cache that supplements the in-memory map with persistent storage
-type Cache struct {
+// Storage is an implementation of httpcache.Storage that supplements the in-memory map with persistent storage
+type Storage struct {
 	DiskPath  string
 	ServerURL string
 }
 
 // Get returns the response corresponding to key if present
-func (c *Cache) Get(key string) (resp []byte, ETag string, err error) {
+func (c *Storage) Get(key string) (resp []byte, ETag string, err error) {
 	filefullPath := path.Join(c.DiskPath, key)
 	// 判断目录是否存在
 	if !fileutil.IsExist(filefullPath) {
@@ -36,7 +36,7 @@ func (c *Cache) Get(key string) (resp []byte, ETag string, err error) {
 	return resp, md5.GetMD5(resp), nil
 }
 
-func (c *Cache) GetStream(key string) (r io.ReadCloser, ETag string, err error) {
+func (c *Storage) GetStream(key string) (r io.ReadCloser, ETag string, err error) {
 	filefullPath := path.Join(c.DiskPath, key)
 	// 判断目录是否存在
 	if !fileutil.IsExist(filefullPath) {
@@ -52,7 +52,7 @@ func (c *Cache) GetStream(key string) (r io.ReadCloser, ETag string, err error) 
 }
 
 // Put saves a response to the cache as key
-func (c *Cache) Put(key string, resp []byte) (ETag string, err error) {
+func (c *Storage) Put(key string, resp []byte) (ETag string, err error) {
 	filefullPath := path.Join(c.DiskPath, key)
 	dir := filepath.Dir(filefullPath)
 	fileutil.CreateDir(dir)
@@ -62,7 +62,7 @@ func (c *Cache) Put(key string, resp []byte) (ETag string, err error) {
 	return md5.GetMD5(resp), nil
 }
 
-func (c *Cache) PutStream(key string, r io.ReadCloser) (ETag string, err error) {
+func (c *Storage) PutStream(key string, r io.ReadCloser) (ETag string, err error) {
 	filefullPath := fmt.Sprintf("%s%s", c.DiskPath, key)
 	dir := filepath.Dir(filefullPath)
 	// 判断目录是否存在
@@ -83,14 +83,14 @@ func (c *Cache) PutStream(key string, r io.ReadCloser) (ETag string, err error) 
 }
 
 // Delete removes the response with key from the cache
-func (c *Cache) Delete(key string) error {
+func (c *Storage) Delete(key string) error {
 	return os.Remove(path.Join(c.DiskPath, key))
 }
-func (c *Cache) HeadObject(key string) (string, *time.Time, error) {
-	return "", nil, nil
+func (c *Storage) HeadObject(key string) (http.Header, error) {
+	return nil, nil
 }
 
 // New returns a new Cache that will store files in basePath
-func New(basePath string) *Cache {
-	return &Cache{DiskPath: basePath}
+func New(basePath string) *Storage {
+	return &Storage{DiskPath: basePath}
 }

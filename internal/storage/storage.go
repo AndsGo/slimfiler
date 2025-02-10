@@ -2,7 +2,7 @@ package storage
 
 import (
 	"io"
-	"time"
+	"net/http"
 )
 
 // The Cache interface defines a cache for storing arbitrary data.  The
@@ -22,7 +22,7 @@ type Storage interface {
 	// Delete deletes the Storage data at the specified key.
 	Delete(key string) error
 
-	HeadObject(key string) (string, *time.Time, error)
+	HeadObject(key string) (http.Header, error)
 }
 
 // NopStorage provides a no-op cache implementation that doesn't actually cache anything.
@@ -42,5 +42,5 @@ func (c nopStorage) Put(string, []byte) (ETag string, err error) { return "", ni
 func (c nopStorage) PutStream(key string, r io.ReadCloser) (ETag string, err error) {
 	return "", nil
 }
-func (c nopStorage) Delete(string) error                           { return nil }
-func (c nopStorage) HeadObject(string) (string, *time.Time, error) { return "", nil, nil }
+func (c nopStorage) Delete(string) error                    { return nil }
+func (c nopStorage) HeadObject(string) (http.Header, error) { return nil, nil }
