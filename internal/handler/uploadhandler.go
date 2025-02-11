@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"path"
 	"slimfiler/internal/svc"
-	md5util "slimfiler/internal/utils/md5"
+	"slimfiler/internal/types"
+	"slimfiler/internal/utils/md5util"
 	"strings"
 	"time"
 
@@ -157,7 +159,15 @@ func returnJson(w http.ResponseWriter, etag string, filename string, svcCtx *svc
 	// 发送HTTP状态码200，表示请求成功。
 	w.WriteHeader(http.StatusOK)
 	// 构造JSON响应体，包含文件名和文件URL，并写入响应中。
-	w.Write([]byte(fmt.Sprintf(`{"code":10000,"data":{"name":"%s","url":"%s"},"msg":""}`, filename, svcCtx.Config.UploadConf.ServerURL+storeFileName)))
+	data := types.BaseDataInfo{
+		Code: types.Success,
+		Msg:  "success",
+		Data: types.UploadInfo{
+			Name: filename,
+			Url:  svcCtx.Config.UploadConf.ServerURL + storeFileName,
+		},
+	}
+	json.NewEncoder(w).Encode(data)
 }
 
 func CheckOverSize(svCtx *svc.ServiceContext, fileType string, size int64) error {

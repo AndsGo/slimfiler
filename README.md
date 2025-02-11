@@ -1,5 +1,6 @@
 ## 介绍
-这是一个Go语言开发的文件服务器，提供文件上传下载，代理，以及图片压缩等功能。其中图片压缩功能依赖[imageprocess](https://github.com/AndsGo/imageprocess)。
+这是一个Go语言开发的文件服务器，提供文件上传下载，代理，以及图片压缩等功能。其中图片处理功能使用兼容`aliyun oss` 参数。
+
 ## 打包
 在根目录下执行
 ```
@@ -7,11 +8,11 @@ go build
 ```
 ## 运行
 ```
-fileserver.exe -f ./conf/conf.yaml
+slimfiler.exe -f ./conf/conf.yaml
 ```
 如果是linux系统，则执行
 ```
-./fileserver -f ./conf/conf.yaml
+./slimfiler -f ./conf/conf.yaml
 ```
 ## 配置文件
 配置文件在conf/conf.yaml，你在实际使用时应该进行修改。
@@ -24,19 +25,49 @@ UploadConf:
   MaxVideoSize: 1073741824 # 1gb
   MaxAudioSize: 33554432  # 32mb
   MaxOtherSize: 10485760  # 10 mb
-  PublicStorePath: /data/file/public  # public path for every one access e.g. nginx path
   ServerURL: "" # nginx path
-  DeleteFileWithCloud: true # whether to delete the cloud files when delete local data | 是否删除本地文件的同时删除云端文件
+  Node: S3Options
+  DiskOptions:
+    DiskPath: "./data/file/public"
+  S3Options:
+    Bucket: "aigc"
+    Endpoint: "http://10.0.0.119:10000"
+    SecretId: "xx"
+    SecretKey: "xx"
+    Region: "CN"
+    Token: ""
+    S3ForcePathStyle: true
+    DisableSSL: false
+PorxyCacheConf:
+  Node: S3Options
+  DiskOptions:
+    DiskPath: "/tmp/cache" # 一般在 /tmp 下 方便自动清理
+  S3Options:
+    Bucket: "test"
+    Endpoint: "http://10.0.0.119:10000"
+    SecretId: "xx"
+    SecretKey: "xx"
+    Region: "CN"
+    Token: ""
+    S3ForcePathStyle: true
+    DisableSSL: false
+Db:
+  Path: ./data/file/db/fileManager.db
+  BuketName: "fileManager" # difualt bucket name
 Log:
   FileName: fileManagerLogger
-#   Mode: console 暂不支持
-  Path: /data/logs/file/api
+  # Mode: file # file or console
+  Path: ./data/logs/file/api
   Level: info
   Compress: false
   KeepDays: 7
   StackCoolDownMillis: 100
 ```
-更多配置项请查看[conf.md](./doc/conf.md)
+具体配置项含义和使用方法请查看[conf.md](./doc/conf.md)
+### 常用配置
+1.[上传文件访问地址配置](./doc/conf.md#UploadConf.ServerURL)
+2.[上传文件保存配置](./doc/conf.md#UploadConf.Node) 支持本地和s3协议
+2.[文件proxy缓存配置](./doc/conf.md#ImageCacheConf.Node) 支持本地和s3协议
 ## 使用方法
 ### 1.上传文件
 ```
@@ -55,18 +86,52 @@ response:
     "msg": ""
 }
 ```
+> 支持form参数:
+1. `file` (必填)
+2. `directory` (选填)
+3. `md5` (选填) 用于验证文件是否已存在，实现秒传
 ### 2.查看文件
 使用上传文件的返回的url访问文件
 ```
 curl --location --request GET 'http://127.0.0.1:8080/data/test/2025-02-07/987cb8c4-f7f8-4b1e-940a-f9dee03e6ec8.jpg'
+
+增加图片处理：
+http://127.0.0.1:8000/data/test/2025-02-07/987cb8c4-f7f8-4b1e-940a-f9dee03e6ec8.jpg?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp
 ```
 ### 3.代理
 ```
-curl --location --request GET 'http://127.0.0.1:8080/proxy/https://camo.githubusercontent.com/253a4a7e49274a9080bf1264bf001f933787b6850aa94b28442b82020bf5772b/68747470733a2f2f68656c702d7374617469632d616c6979756e2d646f632e616c6979756e63732e636f6d2f6173736574732f696d672f7a682d434e2f303331373738393636312f703532373137312e6a7067?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp'
-```
+curl --location --request GET 'http://127.0.0.1:8000/proxy/https://raw.githubusercontent.com/AndsGo/imageprocess/refs/heads/main/examples/example.jpg'
 
+增加图片处理:
+http://127.0.0.1:8000/proxy/https://raw.githubusercontent.com/AndsGo/imageprocess/refs/heads/main/examples/example.jpg?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp
+```
+代理部分功能参考[imageproxy](https://github.dev/willnorris/imageproxy)实现
 ## 图片处理
 图片处理依赖[imageprocess](https://github.com/AndsGo/imageprocess),图片查看和代理都支持图片压缩。
+图片处理兼容 `aliyun oss` 的图片处理，在url后面添加参数`x-oss-process`即可。支持图片格式：`WEBP`,`JPG`,`JPEG`,`PNG`,`BMP`,`TIFF`,`GIF`。 
+### 常用例子
+1. 压缩图片 宽度为360，高度为540
+```
+?x-oss-process=image/resize,w_360,h_540,m_fill
+```
+2. 压缩图片 宽度为360，高度为540，并转为webp格式
+```
+?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp
+```
+3. 压缩图片 宽度为360，高度为540，并转为webp格式，并设置质量为80
+```
+?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp/quality,80
+```
+4. 压缩图片 宽度为360，高度为540，并转为webp格式，并设置质量为80，并设置旋转角度为90度
+```
+?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp/quality,80/rotate,90
+```
+5. 压缩图片 宽度为360，高度为540，并转为webp格式，并设置质量为80，并设置旋转角度为90度，并设置水印
+```
+?x-oss-process=image/resize,w_360,h_540,m_fill/format,webp/quality,80/rotate,90/watermark,text_Hello
+```
+更多设置请查看[imageprocess](https://github.com/AndsGo/imageprocess)
+
 
 ## Docker build
 Docker build 查看 [docker.md](./doc/docker.md)

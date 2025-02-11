@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"slimfiler/internal/svc"
-	"slimfiler/internal/utils/fileutil"
+	"slimfiler/internal/utils/httputil"
 	"strings"
 
 	"github.com/AndsGo/imageprocess"
@@ -31,12 +31,18 @@ func ViewHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			http.Error(w, "File not found", http.StatusNotFound)
 			return
 		}
+		// 获取header
+		header, _ := svcCtx.Storage.HeadObject(fileName)
+		// 设置头
+		for k, v := range header {
+			w.Header().Set(k, v[0])
+		}
 		defer file.Close()
-		// 设置直接下载
 		// 获取文件名
 		extArr := strings.Split(fileName, "/")
 		fileName = extArr[len(extArr)-1]
-		fileutil.SetDownload(w, r, fileName)
+		// 设置直接下载
+		httputil.SetDownload(w, r, fileName)
 		// 获取文件类型
 		// 获取参数
 		// 获取文件后缀
@@ -83,18 +89,42 @@ func ViewHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 }
 
 // 进行转换
-func processImg(file io.Reader, w io.Writer, f imageprocess.Format, options []imageprocess.Option) error {
+func processImg(file io.Reader, w http.ResponseWriter, f imageprocess.Format, options []imageprocess.Option) error {
+	// 从options获取图片格式
+	contextType := "image/" + string(f)
+	for _, v := range options {
+		if v.Parameter == imageprocess.FormatType {
+			contextType = httputil.GetFileType(fmt.Sprintf(".%v", v.Option.(imageprocess.FormatOption).Format))
+		}
+	}
 	if f == imageprocess.GIF {
 		imgGif, err := gif.DecodeAll(file)
 		if err != nil {
 			return err
 		}
+		// 重新设置ContentType
+		//修改 Content-Disposition 的filename
+		setContextType(w, contextType, f)
 		return imageprocess.ProcessGif(imgGif, w, options)
 	} else {
 		img, err := imageprocess.DecodeImage(file, f)
 		if err != nil {
 			return err
 		}
+		// 重新设置ContentType
+		//修改 Content-Disposition 的filename
+		setContextType(w, contextType, f)
 		return imageprocess.Process(img, w, f, options)
+	}
+
+}
+
+func setContextType(w http.ResponseWriter, contextType string, f imageprocess.Format) {
+	w.Header().Set("Content-Type", contextType)
+	w.Header().Del("Content-Length")
+	contentDisposition := w.Header().Get("Content-Disposition")
+	if strings.Contains(contentDisposition, "filename=") {
+		contentDisposition = strings.Replace(contentDisposition, "."+string(f), "."+strings.Split(contextType, "/")[1], 1)
+		w.Header().Set("Content-Disposition", contentDisposition)
 	}
 }

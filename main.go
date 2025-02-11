@@ -38,7 +38,7 @@ func loadConfig(configFile string) *config.Config {
 	if err != nil {
 		log.Fatalf("failed to read config.yaml: %v", err)
 	}
-	fmt.Println(string(data))
+	// fmt.Println(string(data))
 	if err = yaml.Unmarshal(data, &conf); err != nil {
 		log.Fatalf("failed to parse config.yaml: %v", err)
 	}

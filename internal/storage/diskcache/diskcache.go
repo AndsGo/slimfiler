@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"slimfiler/internal/utils/fileutil"
-	"slimfiler/internal/utils/md5"
+	"slimfiler/internal/utils/md5util"
 
 	"github.com/peterbourgon/diskv"
 )
@@ -25,7 +25,7 @@ func (c *Cache) Get(key string) (resp []byte, ETag string, err error) {
 	if err != nil {
 		return []byte{}, "", err
 	}
-	return resp, md5.GetMD5(resp), nil
+	return resp, md5util.GetMD5(resp), nil
 }
 
 func (c *Cache) GetStream(key string) (r io.ReadCloser, ETag string, err error) {
@@ -44,7 +44,7 @@ func (c *Cache) Put(key string, resp []byte) (ETag string, err error) {
 	if err != nil {
 		return "", err
 	}
-	return md5.GetMD5(resp), nil
+	return md5util.GetMD5(resp), nil
 }
 
 func (c *Cache) PutStream(key string, r io.ReadCloser) (ETag string, err error) {
@@ -67,7 +67,7 @@ func (c *Cache) HeadObject(key string) (http.Header, error) {
 }
 
 func keyToFilename(key string) string {
-	return md5.GetMD5([]byte(key))
+	return md5util.GetMD5([]byte(key))
 }
 
 // New returns a new Cache that will store files in basePath

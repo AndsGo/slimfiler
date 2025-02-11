@@ -1,14 +1,15 @@
 package diskstorage
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"slimfiler/internal/utils/fileutil"
-	"slimfiler/internal/utils/md5"
+	"slimfiler/internal/utils/httputil"
+	"slimfiler/internal/utils/md5util"
+	"strconv"
 )
 
 // Storage is an implementation of httpcache.Storage that supplements the in-memory map with persistent storage
@@ -33,7 +34,7 @@ func (c *Storage) Get(key string) (resp []byte, ETag string, err error) {
 	defer file.Close()
 	// 读取文件
 	file.Read(resp)
-	return resp, md5.GetMD5(resp), nil
+	return resp, md5util.GetMD5(resp), nil
 }
 
 func (c *Storage) GetStream(key string) (r io.ReadCloser, ETag string, err error) {
@@ -59,11 +60,11 @@ func (c *Storage) Put(key string, resp []byte) (ETag string, err error) {
 	if err := os.WriteFile(filefullPath, resp, 0644); err != nil {
 		return "", err
 	}
-	return md5.GetMD5(resp), nil
+	return md5util.GetMD5(resp), nil
 }
 
 func (c *Storage) PutStream(key string, r io.ReadCloser) (ETag string, err error) {
-	filefullPath := fmt.Sprintf("%s%s", c.DiskPath, key)
+	filefullPath := path.Join(c.DiskPath, key)
 	dir := filepath.Dir(filefullPath)
 	// 判断目录是否存在
 	if !fileutil.IsExist(dir) {
@@ -87,7 +88,20 @@ func (c *Storage) Delete(key string) error {
 	return os.Remove(path.Join(c.DiskPath, key))
 }
 func (c *Storage) HeadObject(key string) (http.Header, error) {
-	return nil, nil
+	filefullPath := path.Join(c.DiskPath, key)
+	file, err := os.Open(filefullPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	headers := http.Header{}
+	headers.Set("Content-Type", httputil.GetFileType(key))
+	headers.Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
+	return headers, nil
 }
 
 // New returns a new Cache that will store files in basePath

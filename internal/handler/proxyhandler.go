@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"slimfiler/internal/config"
 	"slimfiler/internal/svc"
-	"slimfiler/internal/utils/fileutil"
+	"slimfiler/internal/utils/httputil"
 	"strings"
 
 	"github.com/AndsGo/imageprocess"
@@ -44,8 +44,12 @@ func ProxyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("newFunction %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
+		// 设置头
+		for k, v := range response.Header {
+			w.Header().Set(k, v[0])
+		}
 		// 设置直接下载
-		fileutil.SetDownload(w, r, uuid.NewString()+"."+strings.Split(strings.Split(response.Header.Get("Content-Type"), "/")[1], "?")[0])
+		httputil.SetDownload(w, r, uuid.NewString()+"."+strings.Split(strings.Split(response.Header.Get("Content-Type"), "/")[1], "?")[0])
 		if fileType != "image" {
 			if _, err := io.Copy(w, file); err != nil {
 				logx.Errorf("Copy file error: %s", err.Error())
@@ -98,7 +102,7 @@ func ProxyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	}
 }
 
-// 将url 转换成 md5
+// http缓存
 func httpCache(fileURL string, svcCtx *svc.ServiceContext) (*http.Response, io.ReadCloser, error) {
 	key := strings.Replace(fileURL, "//", "/", -1)
 	cache := svcCtx.Cache
@@ -107,7 +111,7 @@ func httpCache(fileURL string, svcCtx *svc.ServiceContext) (*http.Response, io.R
 		re := &http.Response{
 			StatusCode: 200,
 		}
-		if svcCtx.Config.ImageCacheConf.Node == config.S3Node {
+		if svcCtx.Config.PorxyCacheConf.Node == config.S3Node {
 			headers, err := cache.HeadObject(key)
 			if err == nil {
 				re.Header = headers
@@ -128,14 +132,15 @@ func httpCache(fileURL string, svcCtx *svc.ServiceContext) (*http.Response, io.R
 	if err != nil {
 		return nil, nil, err
 	}
-	// 读取响应体
-	if response.ContentLength < 10*1024*1024 && response.StatusCode == 200 {
+	// 缓存数据
+	if response.ContentLength < svcCtx.Config.PorxyCacheConf.MaxCacheSize &&
+		response.StatusCode == 200 {
 		// 缓存
 		_, err = cache.PutStream(key, response.Body)
 		if err != nil {
 			return nil, nil, err
 		}
-		if svcCtx.Config.ImageCacheConf.Node != config.S3Node {
+		if svcCtx.Config.PorxyCacheConf.Node != config.S3Node {
 			headers := map[string][]string{}
 			// 获取所有 header
 			for key, value := range response.Header {

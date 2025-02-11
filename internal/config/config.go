@@ -22,11 +22,12 @@ type Config struct {
 		DiskOptions  DiskOptions `yaml:"DiskOptions"`
 		S3Options    S3Options   `yaml:"S3Options"`
 	} `yaml:"UploadConf"`
-	ImageCacheConf struct {
-		Node        Node        `yaml:"Node"`
-		DiskOptions DiskOptions `yaml:"DiskOptions"`
-		S3Options   S3Options   `yaml:"S3Options"`
-	} `yaml:"ImageCacheConf"`
+	PorxyCacheConf struct {
+		MaxCacheSize int64       `yaml:"MaxCacheSize"`
+		Node         Node        `yaml:"Node"`
+		DiskOptions  DiskOptions `yaml:"DiskOptions"`
+		S3Options    S3Options   `yaml:"S3Options"`
+	} `yaml:"PorxyCacheConf"`
 	Db struct {
 		Path       string `yaml:"Path"`
 		BucketName string `yaml:"BucketName"`

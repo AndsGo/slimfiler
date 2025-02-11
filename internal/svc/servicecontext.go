@@ -37,11 +37,11 @@ func NewServiceContext(c *config.Config) *ServiceContext {
 		Logger: &logrus.Logger{Out: logger, Formatter: &logrus.JSONFormatter{}, Level: logrus.InfoLevel},
 	}
 	// 初始化缓存
-	switch c.ImageCacheConf.Node {
+	switch c.PorxyCacheConf.Node {
 	case config.DiskNode:
-		svcContxet.Cache = diskcache.New(c.ImageCacheConf.DiskOptions.DiskPath)
+		svcContxet.Cache = diskcache.New(c.PorxyCacheConf.DiskOptions.DiskPath)
 	case config.S3Node:
-		svcContxet.Cache = s3storage.NewAwsS3(s3storage.Options(c.ImageCacheConf.S3Options))
+		svcContxet.Cache = s3storage.NewAwsS3(s3storage.Options(c.PorxyCacheConf.S3Options))
 	default:
 		svcContxet.Cache = storage.NopStorage
 	}

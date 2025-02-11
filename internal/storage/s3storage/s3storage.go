@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"slimfiler/internal/utils/fileutil"
+	"slimfiler/internal/utils/httputil"
 	"strconv"
 	"strings"
 
@@ -54,7 +54,7 @@ func NewAwsS3(options Options) *awsS3 {
 
 // PutObject 根据内容上传文件对象
 func (a *awsS3) Put(awsPath string, content []byte) (string, error) {
-	contentType := fileutil.GetFileType(strings.ToLower(awsPath))
+	contentType := httputil.GetFileType(strings.ToLower(awsPath))
 	putObjectInput := &s3.PutObjectInput{
 		Bucket:      aws.String(a.Bucket),
 		Key:         aws.String(awsPath),
@@ -68,7 +68,7 @@ func (a *awsS3) Put(awsPath string, content []byte) (string, error) {
 	return *(resp.ETag), nil
 }
 func (a *awsS3) PutStream(awsPath string, r io.ReadCloser) (ETag string, err error) {
-	contentType := fileutil.GetFileType(strings.ToLower(awsPath))
+	contentType := httputil.GetFileType(strings.ToLower(awsPath))
 	putObjectInput := &s3manager.UploadInput{
 		Bucket:      aws.String(a.Bucket),
 		Key:         aws.String(awsPath),
