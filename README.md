@@ -1,12 +1,29 @@
 ## 介绍
 这是一个Go语言开发的文件服务器，提供文件上传下载，代理，以及图片压缩等功能。其中图片处理功能使用兼容`aliyun oss` 参数。
 
-## 打包
+## 安装
+linux [下载](https://github.com/AndsGo/SlimFiler/releases/download/v1.1.0/slimfiler)
+
+windows [下载](https://github.com/AndsGo/SlimFiler/releases/download/v1.1.0/slimfiler.exe)
+
+配置文件 [下载](https://github.com/AndsGo/SlimFiler/blob/main/conf/conf.yaml)
+
+> 运行
+```
+slimfiler -f ./conf.yaml
+```
+or
+```
+slimfiler.exe -f ./conf.yaml
+```
+配置文件具体参数参考[conf.md](./doc/conf.md)
+## 源码构建
 在根目录下执行
 ```
 go build 
 ```
 ## 运行
+构建完成后执行
 ```
 slimfiler.exe -f ./conf/conf.yaml
 ```
