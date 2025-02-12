@@ -6,7 +6,7 @@ linux [下载](https://github.com/AndsGo/SlimFiler/releases/download/v1.1.0/slim
 
 windows [下载](https://github.com/AndsGo/SlimFiler/releases/download/v1.1.0/slimfiler.exe)
 
-配置文件 [下载](https://github.com/AndsGo/SlimFiler/blob/main/conf/conf.yaml)
+配置文件 [下载](https://github.com/AndsGo/slimfiler/releases/download/v1.1.0/conf.yaml)
 
 > 运行
 ```
