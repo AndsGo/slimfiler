@@ -1,3 +1,5 @@
+URL参数在线拼接地址:[andsgo.github.io/slimfiler/](https://andsgo.github.io/slimfiler/)
+
 ## 介绍
 这是一个Go语言开发的文件服务器，提供文件上传下载，代理，以及图片压缩等功能。其中图片处理功能使用兼容`aliyun oss` 参数。
 
