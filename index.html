@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -162,6 +162,14 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+        }
+
+        .image-container:hover .download-button {
+            opacity: 1;
+        }
+
+        .download-button:hover {
+            background: rgba(0,0,0,0.9) !important;
         }
 
         .image-container img {
@@ -486,6 +494,7 @@
                     <img id="previewImage" style="display: none;">
                     <canvas id="previewCanvas" style="display: none;"></canvas>
                     <div id="imageSizeInfo" style="display: none; position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;"></div>
+                    <button id="downloadBtn" class="download-button" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">下载图片</button>
                 </div>
 
                 <div class="action-buttons">
@@ -570,6 +579,9 @@
 
             // 按钮事件
             resetBtn.addEventListener('click', resetAllSettings);
+            
+            // 下载按钮事件
+            document.getElementById('downloadBtn').addEventListener('click', downloadImage);
 
             // 添加实时预览监听器
             setupRealTimePreview();
@@ -628,6 +640,10 @@
             const sizeInfo = document.getElementById('imageSizeInfo');
             sizeInfo.textContent = `${image.width} × ${image.height} px`;
             sizeInfo.style.display = 'block';
+            
+            // 显示下载按钮
+            const downloadBtn = document.getElementById('downloadBtn');
+            downloadBtn.style.display = 'block';
             
             if (useCanvasPreview) {
                 previewImage.style.display = 'none';
@@ -829,6 +845,9 @@
 
             // 隐藏URL输出
             urlOutput.style.display = 'none';
+            
+            // 隐藏下载按钮
+            document.getElementById('downloadBtn').style.display = 'none';
 
             // 重新加载原始图片
             if (currentImage) {
@@ -1068,6 +1087,18 @@
             previewCtx.fillRect(x + width, y, previewCanvas.width - x - width, height); // 右
             
             previewCtx.restore();
+        }
+
+        // 下载图片功能
+        function downloadImage() {
+            const canvas = document.getElementById('previewCanvas');
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'processed-image.png';
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // 初始化
